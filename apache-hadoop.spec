@@ -1,7 +1,7 @@
 Name: apache-hadoop
 Version: 0.20.2
 Release: el5
-Summary: Apache Hadoop
+Summary: Apache Hadoop %{version}
 License: Apache License Version 2.0
 Group: Networking/Daemons
 URL: http://hadoop.apache.org
@@ -11,7 +11,7 @@ Source2: http://www.reverse.net/pub/apache//hadoop/common/hadoop-%{version}/hado
 Requires: ssh, rsync
 AutoReq: yes
 AutoProv: yes
-BuildArch: noarch
+#BuildArch: noarch
 
 %description
 The Apache™ Hadoop™ project develops open-source software for reliable, scalable, distributed computing.
@@ -29,20 +29,26 @@ exit 0
 install -d %{_rpmdir}/noarch
 install -d %{_srcrpmdir}/noarch
 
-# /etc/hadoop
-install -d $RPM_BUILD_ROOT/etc
-mv $RPM_BUILD_DIR/hadoop-%{version}/conf $RPM_BUILD_ROOT/etc/hadoop
-
-# /usr/bin
-install -d $RPM_BUILD_ROOT/usr/bin
-cp $RPM_BUILD_DIR/hadoop-%{version}/bin/hadoop $RPM_BUILD_ROOT/usr/bin/
-
 # /usr/share/hadoop-%{version}
 install -d $RPM_BUILD_ROOT/usr/share
 mv $RPM_BUILD_DIR/hadoop-%{version} $RPM_BUILD_ROOT/usr/share/hadoop-%{version}
+# Do the following mkdir to satisfy the clean stage
+mkdir $RPM_BUILD_DIR/hadoop-%{version}
+
+# /usr/bin
+install -d $RPM_BUILD_ROOT/usr/bin
+cp $RPM_BUILD_ROOT/usr/share/hadoop-%{version}/bin/hadoop $RPM_BUILD_ROOT/usr/bin/
+
+# /etc/hadoop
+install -d $RPM_BUILD_ROOT/etc
+mv $RPM_BUILD_ROOT/usr/share/hadoop-%{version}/conf $RPM_BUILD_ROOT/etc/hadoop
 
 # /var/log/hadoop
 install -d $RPM_BUILD_ROOT/var/log/hadoop
+
+ln -s /usr/share/hadoop-%{version} $RPM_BUILD_ROOT/usr/share/hadoop
+ln -s /etc/hadoop $RPM_BUILD_ROOT/usr/share/hadoop-%{version}/conf
+ln -s /var/log/hadoop $RPM_BUILD_ROOT/usr/share/hadoop-%{version}/logs
 exit 0
 
 %files
@@ -50,16 +56,19 @@ exit 0
 %attr(600,hadoop,hadoop) %config(noreplace) /etc/hadoop/*
 %attr(500,hadoop,hadoop) /usr/bin/hadoop
 %attr(500,hadoop,hadoop) /usr/share/hadoop-%{version}/bin/*
+/usr/share/hadoop
 /usr/share/hadoop-%{version}/c++
-/usr/share/hadoop-%{version}/contrib
+/usr/share/hadoop-%{version}/conf
 /usr/share/hadoop-%{version}/ivy
 /usr/share/hadoop-%{version}/lib
 /usr/share/hadoop-%{version}/librecordio
+/usr/share/hadoop-%{version}/logs
 /usr/share/hadoop-%{version}/src
 /usr/share/hadoop-%{version}/webapps
 /usr/share/hadoop-%{version}/*.xml
 /usr/share/hadoop-%{version}/*.jar
 %doc /usr/share/hadoop-%{version}/*.txt
+%doc /usr/share/hadoop-%{version}/contrib
 %doc /usr/share/hadoop-%{version}/docs
 %attr(700,hadoop,hadoop) /var/log/hadoop
 
@@ -72,13 +81,7 @@ getent passwd hadoop > /dev/null || useradd -r -d /usr/share/hadoop hadoop
 getent group hadoop > /dev/null || groupadd -r hadoop
 
 %post
-ln -s /usr/share/hadoop-%{version} /usr/share/hadoop
-ln -s /etc/hadoop /usr/share/hadoop-%{version}/conf
-ln -s /var/log/hadoop /usr/share/hadoop-%{version}/logs
 
 %preun
-rm /usr/share/hadoop
-rm /usr/share/hadoop-%{version}/conf
-rm /usr/share/hadoop-%{version}/logs
 
 %postun
